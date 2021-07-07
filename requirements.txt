@@ -1,0 +1,7 @@
+youtube_dl
+eyeD3
+requests
+pydub
+mp3-tagger
+ffmpeg
+ffprobe
