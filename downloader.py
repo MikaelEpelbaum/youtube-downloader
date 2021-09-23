@@ -44,13 +44,12 @@ def songDownloader(video_info, location, artist=None, album=None):
     elif artist.find('–') > 0:
         artist = artist[:artist.find('-')].rstrip(' ')
         song['artist'] = artist
-    elif artist.find('-') > 0:
-        artist = artist[:artist.find('-')].rstrip(' ')
-        song['artist'] = artist
-    # else:
-    #     try:
-    #         if temp.replace(' ', '') in artist:
-    #             song['artist'] = temp
+    else:
+        try:
+            if temp.replace(' ', '') in artist:
+                song['artist'] = temp
+        finally:
+            pass
     itunes_data = getItunesBody(song['artist'], song['name'])
     if itunes_data:
         if not album:
@@ -125,38 +124,29 @@ def setValues(song):
     path = song['address']
     with open(path) as file:
         audio = eyed3.load(path)
-        if (audio.tag == None):
-            audio.initTag()
+        if audio is None:
+            return
         if 'webm' in eyed3.mimetype.guessMimetype(song['address']):
             video_to_mp3(path)
             audio = eyed3.load(path)
+        if audio.tag == None:
+            audio.initTag()
 
         audio.tag.artist = song['artist']
         audio.tag.title = song['name']
         audio.tag.release_date = song['date']
         audio.tag.album = song['album']
 
+        song['cover-path'] = os.path.join(song['folder'], removeWinForbiden(song['album'])+'.jpg')
         try:
-            song['cover-path'] = os.path.join(song['folder'], removeWinForbiden(song['album'])+'.jpg')
             urllib.request.urlretrieve(song['image-url'], song['cover-path'])
             imageData = open(song['cover-path'], "rb").read()
-            audio.tag.images.set(3, imageData, "image/jpg")
-        except FileNotFoundError:
-            pass
-        finally:
-            print('No cover found')
-        audio.tag.save()
-        os.remove(song['cover-path'])
+            audio.tag.images.set(3, imageData, "image/jpeg")
+            audio.tag.save(version=eyed3.id3.ID3_V2_3)
+            os.remove(song['cover-path'])
+        except:
+            audio.tag.save()
 
-
-# def setValues(song):
-#     path = song['address']
-#     mp3 = MP3File(path)
-#     mp3.artist = song['artist']
-#     mp3.song = song['name']
-#     mp3.album = song['album']
-#     mp3.set_version(VERSION_BOTH)
-#     mp3.save()
 
 def nameCleaner(name):
     name = f"{name.replace(' (Official Music Video)', '')}"
